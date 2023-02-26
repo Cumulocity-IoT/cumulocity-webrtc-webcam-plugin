@@ -68,7 +68,7 @@ jobs:
       - name: 🎁 Zip
         run: |
           cd dist/apps/cumulocity-webrtc-webcam-plugin
-          zip -r -q ../../cumulocity-webrtc-webcam-plugin.zip *
+          zip -r -q ../../../cumulocity-webrtc-webcam-plugin.zip *
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
