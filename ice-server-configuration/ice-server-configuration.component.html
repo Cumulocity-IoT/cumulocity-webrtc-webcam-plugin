@@ -1,0 +1,27 @@
+<c8y-title>WebRTC ICE server config</c8y-title>
+<div class="card">
+  <div class="card-header separator">
+    <h4 class="card-title">WebRTC ICE server config</h4>
+  </div>
+  <div class="card-block">
+    <div class="form-group">
+      <label>Config</label>
+      <textarea
+        class="form-control"
+        rows="20"
+        [ngModel]="config"
+        (ngModelChange)="changes($event)"
+      ></textarea>
+    </div>
+  </div>
+  <div class="card-footer separator">
+    <button
+      class="btn btn-primary"
+      [disabled]="!parseable"
+      (click)="save()"
+      translate
+    >
+      Save
+    </button>
+  </div>
+</div>

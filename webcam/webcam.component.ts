@@ -2,6 +2,7 @@ import { Component, OnDestroy } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { IManagedObject } from "@c8y/client";
 import { OperationRealtimeService } from "@c8y/ngx-components";
+import { IceServerConfigurationService } from "../ice-server-configuration.service";
 import { WebRtcSignalingService } from "./web-rtc-signaling.service";
 
 @Component({
@@ -10,18 +11,6 @@ import { WebRtcSignalingService } from "./web-rtc-signaling.service";
   providers: [OperationRealtimeService, WebRtcSignalingService],
 })
 export class WebcamComponent implements OnDestroy {
-  servers: RTCConfiguration = {
-    iceServers: [
-      {
-        urls: [
-          "stun:stun1.l.google.com:19302",
-          "stun:stun2.l.google.com:19302",
-        ],
-      },
-    ],
-    iceCandidatePoolSize: 10,
-  };
-
   // Global State
   pc: RTCPeerConnection;
   remoteStream: MediaStream;
@@ -30,7 +19,8 @@ export class WebcamComponent implements OnDestroy {
 
   constructor(
     public signaling: WebRtcSignalingService,
-    private activatedRoute: ActivatedRoute
+    private activatedRoute: ActivatedRoute,
+    private iceConfig: IceServerConfigurationService
   ) {
     this.device = this.activatedRoute.parent.snapshot.data.contextData;
   }
@@ -40,13 +30,18 @@ export class WebcamComponent implements OnDestroy {
   }
 
   async call() {
+    const iceServers = await this.iceConfig.getIceServers();
+    const iceConfig: RTCConfiguration = {
+      iceServers,
+      iceCandidatePoolSize: 10,
+    };
     const connectionUUID = crypto.randomUUID();
     this.connectionUUID = connectionUUID;
     const { candidates: remoteCandidates, offer } = await this.signaling
       .requestOffer$(`${this.device.id}`, connectionUUID)
       .toPromise();
     console.log(remoteCandidates, offer);
-    this.pc = new RTCPeerConnection(this.servers);
+    this.pc = new RTCPeerConnection(iceConfig);
     this.remoteStream = new MediaStream();
     this.pc.ontrack = (event) => {
       event.streams[0].getTracks().forEach((track) => {

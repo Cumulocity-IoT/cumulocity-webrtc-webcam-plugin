@@ -66,11 +66,18 @@
           "module": "WebcamPluginModule",
           "path": "./webcam/webcam.module.ts",
           "description": "Adds a webcam tab to supported devices."
+        },
+        {
+          "name": "WebRTC ice server config plugin",
+          "module": "IceServerConfigurationModule",
+          "path": "./ice-server-configuration/ice-server-configuration.module.ts",
+          "description": "Allows to configure the ice servers to be used for WebRTC."
         }
       ],
       "remotes": {
         "cumulocity-webrtc-webcam-plugin": [
-          "WebcamPluginModule"
+          "WebcamPluginModule",
+          "IceServerConfigurationModule"
         ]
       }
     },
