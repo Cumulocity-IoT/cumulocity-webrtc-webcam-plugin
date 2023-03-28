@@ -1,14 +1,21 @@
 import { Component, OnDestroy } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import { IManagedObject } from "@c8y/client";
-import { OperationRealtimeService } from "@c8y/ngx-components";
+import { BasicAuth, IManagedObject } from "@c8y/client";
+import { AppStateService } from "@c8y/ngx-components";
+import { concatMap } from "rxjs/operators";
 import { IceServerConfigurationService } from "../ice-server-configuration.service";
-import { WebRtcSignalingService } from "./web-rtc-signaling.service";
+import { SignalingConnection, SignalingService } from "./signaling.service";
+
+enum WebRTCSignalingMessageTypes {
+  offer = "webrtc/offer",
+  candidate = "webrtc/candidate",
+  answer = "webrtc/answer",
+}
 
 @Component({
   selector: "app-webcam",
   templateUrl: "./webcam.component.html",
-  providers: [OperationRealtimeService, WebRtcSignalingService],
+  providers: [],
 })
 export class WebcamComponent implements OnDestroy {
   // Global State
@@ -16,11 +23,14 @@ export class WebcamComponent implements OnDestroy {
   remoteStream: MediaStream;
   connectionUUID: string;
   device: IManagedObject;
+  signaling: SignalingConnection;
 
   constructor(
-    public signaling: WebRtcSignalingService,
     private activatedRoute: ActivatedRoute,
-    private iceConfig: IceServerConfigurationService
+    private iceConfig: IceServerConfigurationService,
+    private appState: AppStateService,
+    private basicAuth: BasicAuth,
+    private signalingService: SignalingService
   ) {
     this.device = this.activatedRoute.parent.snapshot.data.contextData;
   }
@@ -30,17 +40,19 @@ export class WebcamComponent implements OnDestroy {
   }
 
   async call() {
+    const { token, xsrf } = this.getToken();
+    const configId = this.signalingService.extractRCAIdFromDevice(this.device);
+    this.signaling = this.signalingService.establishSignalingConnection(
+      this.device.id,
+      configId,
+      token,
+      xsrf
+    );
     const iceServers = await this.iceConfig.getIceServers();
     const iceConfig: RTCConfiguration = {
       iceServers,
       iceCandidatePoolSize: 10,
     };
-    const connectionUUID = crypto.randomUUID();
-    this.connectionUUID = connectionUUID;
-    const { candidates: remoteCandidates, offer } = await this.signaling
-      .requestOffer$(`${this.device.id}`, connectionUUID)
-      .toPromise();
-    console.log(remoteCandidates, offer);
     this.pc = new RTCPeerConnection(iceConfig);
     this.remoteStream = new MediaStream();
     this.pc.ontrack = (event) => {
@@ -48,60 +60,92 @@ export class WebcamComponent implements OnDestroy {
         this.remoteStream.addTrack(track);
       });
     };
-    this.pc.setRemoteDescription(new RTCSessionDescription(offer));
-    remoteCandidates.forEach((candidate) => {
-      this.pc.addIceCandidate(candidate);
-    });
-    const { candidates, answerDescription } = await this.getAnswer();
-
-    const answer = {
-      sdp: answerDescription.sdp,
-      type: answerDescription.type,
+    this.pc.onconnectionstatechange = (event) => {
+      console.log(event);
     };
 
-    const update = await this.signaling
-      .createAnswer$(`${this.device.id}`, connectionUUID, answer, candidates)
-      .toPromise();
-    console.log(update);
+    this.signaling
+      .responses$()
+      .pipe(concatMap((tmp: Blob) => tmp.text()))
+      .subscribe((msg) => {
+        try {
+          const parsed = JSON.parse(msg);
+          if (parsed.type === WebRTCSignalingMessageTypes.answer) {
+            this.pc.setRemoteDescription(
+              new RTCSessionDescription({ type: "answer", sdp: parsed.value })
+            );
+          } else if (parsed.type === WebRTCSignalingMessageTypes.candidate) {
+            this.pc
+              .addIceCandidate({ candidate: parsed.value, sdpMid: "0" })
+              .catch((tmp) => console.error(tmp));
+          }
+        } catch (e) {
+          console.log(e);
+          console.error(msg);
+        }
+      });
+
+    await this.getOffer(this.signaling);
   }
 
   async hangUp() {
     this.pc?.close();
-    if (this.connectionUUID) {
-      const uuid = crypto.randomUUID();
-      this.signaling.requestCleanUp(
-        this.connectionUUID,
-        uuid,
-        `${this.device.id}`
-      );
-      this.connectionUUID = undefined;
-    }
+    this.signaling?.close();
     this.remoteStream = undefined;
     this.pc = undefined;
+    this.signaling = undefined;
   }
 
-  private getAnswer(): Promise<{
-    candidates: Array<RTCIceCandidate>;
-    answerDescription: RTCSessionDescriptionInit;
-  }> {
-    console.log("getAnswer");
+  private getOffer(signaling: SignalingConnection): Promise<void> {
     return new Promise(async (resolve) => {
-      const candidates = new Array<RTCIceCandidate>();
-      let answerDescription: RTCSessionDescriptionInit;
+      let offerDescription: RTCSessionDescriptionInit;
       this.pc.onicegatheringstatechange = (event) => {
         if (this.pc.iceGatheringState === "complete") {
-          console.log("Gathering completed: ", candidates);
-          resolve({ candidates, answerDescription });
+          console.log("Gathering completed");
+          resolve();
         }
       };
       this.pc.onicecandidate = (event) => {
         if (event.candidate) {
-          candidates.push(event.candidate);
+          signaling.sendMsg(
+            JSON.stringify({
+              type: WebRTCSignalingMessageTypes.candidate,
+              value: event.candidate.toJSON().candidate,
+            })
+          );
+        } else {
+          signaling.sendMsg(
+            JSON.stringify({
+              type: WebRTCSignalingMessageTypes.candidate,
+              value: "",
+            })
+          );
         }
       };
 
-      answerDescription = await this.pc.createAnswer();
-      await this.pc.setLocalDescription(answerDescription);
+      offerDescription = await this.pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
+      signaling.sendMsg(
+        JSON.stringify({
+          type: WebRTCSignalingMessageTypes.offer,
+          value: offerDescription.sdp,
+        })
+      );
+      await this.pc.setLocalDescription(offerDescription);
     });
+  }
+
+  private getToken(): { token: string; xsrf: string } {
+    const { headers } = this.basicAuth.getFetchOptions({});
+    const { Authorization: token, "X-XSRF-TOKEN": xsrf } = headers;
+    if (token && token !== "Basic ") {
+      return { token, xsrf };
+    }
+
+    const userId = this.appState.currentUser.value.id;
+    const tenantId = this.appState.currentTenant.value.name;
+    return { token: btoa(`${tenantId}/${userId}:undefined`), xsrf };
   }
 }
