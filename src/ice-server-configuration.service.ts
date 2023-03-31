@@ -1,11 +1,11 @@
-import { Injectable } from "@angular/core";
-import { TenantOptionsService } from "@c8y/client";
-import { AlertService } from "@c8y/ngx-components";
+import { Injectable } from '@angular/core';
+import { TenantOptionsService } from '@c8y/client';
+import { AlertService } from '@c8y/ngx-components';
 
-@Injectable({ providedIn: "root" })
+@Injectable({ providedIn: 'root' })
 export class IceServerConfigurationService {
-  private readonly configKey = "iceservers";
-  private readonly configCategory = "webrtc";
+  private readonly configKey = 'iceservers';
+  private readonly configCategory = 'webrtc';
 
   constructor(
     private options: TenantOptionsService,
@@ -26,8 +26,8 @@ export class IceServerConfigurationService {
       }
     } catch (e) {
       this.alert.add({
-        text: "Failed to retrieve WebRTC ICE server configuration, falling back to defaults",
-        type: "warning",
+        text: 'Failed to retrieve WebRTC ICE server configuration, falling back to defaults',
+        type: 'warning',
         timeout: 5000,
       });
     }
@@ -36,8 +36,8 @@ export class IceServerConfigurationService {
       iceServers = [
         {
           urls: [
-            "stun:stun1.l.google.com:19302",
-            "stun:stun2.l.google.com:19302",
+            'stun:stun1.l.google.com:19302',
+            'stun:stun2.l.google.com:19302',
           ],
         },
       ];

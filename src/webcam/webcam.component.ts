@@ -1,20 +1,20 @@
-import { Component, OnDestroy } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
-import { BasicAuth, IManagedObject } from "@c8y/client";
-import { AppStateService } from "@c8y/ngx-components";
-import { concatMap } from "rxjs/operators";
-import { IceServerConfigurationService } from "../ice-server-configuration.service";
-import { SignalingConnection, SignalingService } from "./signaling.service";
+import { Component, OnDestroy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { BasicAuth, IManagedObject } from '@c8y/client';
+import { AppStateService } from '@c8y/ngx-components';
+import { concatMap } from 'rxjs/operators';
+import { IceServerConfigurationService } from '../ice-server-configuration.service';
+import { SignalingConnection, SignalingService } from './signaling.service';
 
 enum WebRTCSignalingMessageTypes {
-  offer = "webrtc/offer",
-  candidate = "webrtc/candidate",
-  answer = "webrtc/answer",
+  offer = 'webrtc/offer',
+  candidate = 'webrtc/candidate',
+  answer = 'webrtc/answer',
 }
 
 @Component({
-  selector: "app-webcam",
-  templateUrl: "./webcam.component.html",
+  selector: 'app-webcam',
+  templateUrl: './webcam.component.html',
   providers: [],
 })
 export class WebcamComponent implements OnDestroy {
@@ -72,11 +72,11 @@ export class WebcamComponent implements OnDestroy {
           const parsed = JSON.parse(msg);
           if (parsed.type === WebRTCSignalingMessageTypes.answer) {
             this.pc.setRemoteDescription(
-              new RTCSessionDescription({ type: "answer", sdp: parsed.value })
+              new RTCSessionDescription({ type: 'answer', sdp: parsed.value })
             );
           } else if (parsed.type === WebRTCSignalingMessageTypes.candidate) {
             this.pc
-              .addIceCandidate({ candidate: parsed.value, sdpMid: "0" })
+              .addIceCandidate({ candidate: parsed.value, sdpMid: '0' })
               .catch((tmp) => console.error(tmp));
           }
         } catch (e) {
@@ -96,12 +96,11 @@ export class WebcamComponent implements OnDestroy {
     this.signaling = undefined;
   }
 
-  private getOffer(signaling: SignalingConnection): Promise<void> {
-    return new Promise(async (resolve) => {
-      let offerDescription: RTCSessionDescriptionInit;
-      this.pc.onicegatheringstatechange = (event) => {
-        if (this.pc.iceGatheringState === "complete") {
-          console.log("Gathering completed");
+  private async getOffer(signaling: SignalingConnection): Promise<void> {
+    const promise = new Promise<void>((resolve) => {
+      this.pc.onicegatheringstatechange = () => {
+        if (this.pc.iceGatheringState === 'complete') {
+          console.log('Gathering completed');
           resolve();
         }
       };
@@ -117,30 +116,30 @@ export class WebcamComponent implements OnDestroy {
           signaling.sendMsg(
             JSON.stringify({
               type: WebRTCSignalingMessageTypes.candidate,
-              value: "",
+              value: '',
             })
           );
         }
       };
-
-      offerDescription = await this.pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true,
-      });
-      signaling.sendMsg(
-        JSON.stringify({
-          type: WebRTCSignalingMessageTypes.offer,
-          value: offerDescription.sdp,
-        })
-      );
-      await this.pc.setLocalDescription(offerDescription);
     });
+    const offerDescription = await this.pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
+    signaling.sendMsg(
+      JSON.stringify({
+        type: WebRTCSignalingMessageTypes.offer,
+        value: offerDescription.sdp,
+      })
+    );
+    await this.pc.setLocalDescription(offerDescription);
+    return await promise;
   }
 
   private getToken(): { token: string; xsrf: string } {
     const { headers } = this.basicAuth.getFetchOptions({});
-    const { Authorization: token, "X-XSRF-TOKEN": xsrf } = headers;
-    if (token && token !== "Basic ") {
+    const { Authorization: token, 'X-XSRF-TOKEN': xsrf } = headers;
+    if (token && token !== 'Basic ') {
       return { token, xsrf };
     }
 

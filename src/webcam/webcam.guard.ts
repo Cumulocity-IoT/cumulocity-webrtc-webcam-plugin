@@ -1,8 +1,8 @@
-import { Injectable } from "@angular/core";
-import { ActivatedRouteSnapshot, CanActivate } from "@angular/router";
-import { SignalingService } from "./signaling.service";
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, CanActivate } from '@angular/router';
+import { SignalingService } from './signaling.service';
 
-@Injectable({ providedIn: "root" })
+@Injectable({ providedIn: 'root' })
 export class WebcamGuard implements CanActivate {
   constructor(private signaling: SignalingService) {}
 
@@ -12,7 +12,7 @@ export class WebcamGuard implements CanActivate {
     if (!supportedOperations || !Array.isArray(supportedOperations)) {
       return false;
     }
-    if (!supportedOperations.includes("c8y_RemoteAccessConnect")) {
+    if (!supportedOperations.includes('c8y_RemoteAccessConnect')) {
       return false;
     }
 

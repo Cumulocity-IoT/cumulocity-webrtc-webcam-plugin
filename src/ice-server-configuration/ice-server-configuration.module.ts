@@ -1,12 +1,12 @@
-import { NgModule } from "@angular/core";
-import { IceServerConfigurationComponent } from "./ice-server-configuration.component";
+import { NgModule } from '@angular/core';
+import { IceServerConfigurationComponent } from './ice-server-configuration.component';
 import {
   CoreModule,
   HOOK_NAVIGATOR_NODES,
   HOOK_ROUTE,
   NavigatorNodeData,
   Route,
-} from "@c8y/ngx-components";
+} from '@c8y/ngx-components';
 
 @NgModule({
   imports: [CoreModule],
@@ -15,7 +15,7 @@ import {
     {
       provide: HOOK_ROUTE,
       useValue: {
-        path: "webrtc-ice",
+        path: 'webrtc-ice',
         component: IceServerConfigurationComponent,
       } as Route,
       multi: true,
@@ -23,10 +23,10 @@ import {
     {
       provide: HOOK_NAVIGATOR_NODES,
       useValue: {
-        label: "WebRTC ICE Server",
-        path: "webrtc-ice",
+        label: 'WebRTC ICE Server',
+        path: 'webrtc-ice',
         // parent: "Configuration",
-        icon: "video-camera",
+        icon: 'video-camera',
       } as NavigatorNodeData,
       multi: true,
     },

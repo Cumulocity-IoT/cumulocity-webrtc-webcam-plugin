@@ -1,7 +1,7 @@
-import { Injectable } from "@angular/core";
-import { IManagedObject } from "@c8y/client";
-import { merge, Observable, Subject } from "rxjs";
-import { buffer, filter } from "rxjs/operators";
+import { Injectable } from '@angular/core';
+import { IManagedObject } from '@c8y/client';
+import { merge, Observable, Subject } from 'rxjs';
+import { buffer, filter } from 'rxjs/operators';
 
 export class SignalingConnection {
   private ws: WebSocket;
@@ -9,22 +9,22 @@ export class SignalingConnection {
   private messagesToSend = new Subject<Blob>();
   constructor(deviceId: string, configId: string, token: string, xsrf: string) {
     const hostname = window.location.hostname;
-    const protocol = window.location.protocol?.includes("https") ? "wss" : "ws";
+    const protocol = window.location.protocol?.includes('https') ? 'wss' : 'ws';
     const port = window.location.port;
     const url = `${protocol}://${hostname}:${port}/service/remoteaccess/client/${deviceId}/configurations/${configId}?token=${token}&XSRF-TOKEN=${xsrf}`;
     const bufferTrigger = new Subject();
-    this.ws = new WebSocket(url, ["binary"]);
+    this.ws = new WebSocket(url, ['binary']);
     this.ws.onmessage = (msg) => {
-      console.log("msg", msg.data);
+      console.log('msg', msg.data);
       this.responses.next(msg.data);
     };
     this.ws.onclose = () => {
-      console.log("closed");
+      console.log('closed');
       this.responses.complete();
     };
     this.ws.onerror = () => {
-      console.log("error");
-      this.responses.error("error");
+      console.log('error');
+      this.responses.error('error');
     };
     const buffered = this.messagesToSend.pipe(buffer(bufferTrigger));
     const whileConnectionOpen = this.messagesToSend.pipe(
@@ -38,13 +38,13 @@ export class SignalingConnection {
       }
     });
     this.ws.onopen = () => {
-      console.log("open");
+      console.log('open');
       bufferTrigger.next();
     };
   }
 
   sendMsg(msg: string) {
-    console.log("sending");
+    console.log('sending');
     this.messagesToSend.next(new Blob([msg]));
   }
 
@@ -59,7 +59,7 @@ export class SignalingConnection {
   }
 }
 
-@Injectable({ providedIn: "root" })
+@Injectable({ providedIn: 'root' })
 export class SignalingService {
   extractRCAIdFromDevice(device: IManagedObject): string | null {
     const { c8y_RemoteAccessList: remoteAccessList } = device;
@@ -68,7 +68,8 @@ export class SignalingService {
     }
 
     const entry = remoteAccessList.find(
-      (tmp) => typeof tmp.name === "string" && tmp.name.includes("webcam")
+      ({ name }) =>
+        typeof name === 'string' && name.toLowerCase().includes('webcam')
     );
 
     return entry?.id;
