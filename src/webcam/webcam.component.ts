@@ -1,7 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { BasicAuth, IManagedObject } from '@c8y/client';
-import { AppStateService } from '@c8y/ngx-components';
 import { concatMap } from 'rxjs/operators';
 import { IceServerConfigurationService } from '../ice-server-configuration.service';
 import { SignalingConnection, SignalingService } from './signaling.service';
@@ -28,7 +27,6 @@ export class WebcamComponent implements OnDestroy {
   constructor(
     private activatedRoute: ActivatedRoute,
     private iceConfig: IceServerConfigurationService,
-    private appState: AppStateService,
     private basicAuth: BasicAuth,
     private signalingService: SignalingService
   ) {
@@ -143,8 +141,6 @@ export class WebcamComponent implements OnDestroy {
       return { token, xsrf };
     }
 
-    const userId = this.appState.currentUser.value.id;
-    const tenantId = this.appState.currentTenant.value.name;
-    return { token: btoa(`${tenantId}/${userId}:undefined`), xsrf };
+    return { token: '', xsrf };
   }
 }

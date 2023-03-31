@@ -11,7 +11,10 @@ export class SignalingConnection {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol?.includes('https') ? 'wss' : 'ws';
     const port = window.location.port;
-    const url = `${protocol}://${hostname}:${port}/service/remoteaccess/client/${deviceId}/configurations/${configId}?token=${token}&XSRF-TOKEN=${xsrf}`;
+    const queryParams = token
+      ? `token=${token}&XSRF-TOKEN=${xsrf}`
+      : `XSRF-TOKEN=${xsrf}`;
+    const url = `${protocol}://${hostname}:${port}/service/remoteaccess/client/${deviceId}/configurations/${configId}?${queryParams}`;
     const bufferTrigger = new Subject();
     this.ws = new WebSocket(url, ['binary']);
     this.ws.onmessage = (msg) => {
