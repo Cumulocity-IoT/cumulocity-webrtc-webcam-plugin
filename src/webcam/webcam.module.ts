@@ -1,12 +1,12 @@
-import { NgModule } from "@angular/core";
-import { WebcamComponent } from "./webcam.component";
+import { NgModule } from '@angular/core';
+import { WebcamComponent } from './webcam.component';
 import {
   CoreModule,
   gettext,
   HOOK_ROUTE,
   ViewContext,
-} from "@c8y/ngx-components";
-import { WebcamGuard } from "./webcam.guard";
+} from '@c8y/ngx-components';
+import { WebcamGuard } from './webcam.guard';
 
 @NgModule({
   imports: [CoreModule],
@@ -15,13 +15,13 @@ import { WebcamGuard } from "./webcam.guard";
     {
       provide: HOOK_ROUTE,
       useValue: {
-        path: "webcam",
+        path: 'webcam',
         context: ViewContext.Device,
         component: WebcamComponent,
         canActivate: [WebcamGuard],
-        label: gettext("Webcam"),
+        label: gettext('Webcam'),
         priority: 0,
-        icon: "video-camera",
+        icon: 'video-camera',
       },
       multi: true,
     },

@@ -1,12 +1,19 @@
 {
   "name": "cumulocity-webrtc-webcam-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A package that allows to access the webcam of cumulocity devices via webrtc ",
   "scripts": {
     "start": "c8ycli server",
-    "build": "c8ycli build",
+    "start:shell": "c8ycli server --shell devicemanagement",
+    "build": "rimraf dist && c8ycli build",
+    "build:ci": "npm run build -- --ci",
+    "commit": "commit",
     "deploy": "c8ycli deploy",
-    "postinstall": "ngcc"
+    "lint": "eslint --ext .ts,.html .",
+    "lint:staged": "lint-staged",
+    "postinstall": "ngcc",
+    "prepare": "husky install",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -19,6 +26,7 @@
     "url": "https://github.com/SoftwareAG/cumulocity-webrtc-webcam-plugin/issues"
   },
   "homepage": "https://github.com/SoftwareAG/cumulocity-webrtc-webcam-plugin#readme",
+  "main": "./src/index",
   "dependencies": {
     "@angular/animations": "14.0.6",
     "@angular/cdk": "14.1.2",
@@ -32,29 +40,51 @@
     "@angular/upgrade": "14.0.6",
     "@c8y/client": "1016.0.128",
     "@c8y/ngx-components": "1016.0.128",
+    "@c8y/style": "1016.0.128",
     "@ngx-translate/core": "14.0.0",
     "rxjs": "~6.6.3",
-    "zone.js": "~0.11.7",
-    "@c8y/style": "1016.0.128"
+    "zone.js": "~0.11.7"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "14.0.6",
+    "@angular-eslint/eslint-plugin": "^14.0.0",
+    "@angular-eslint/eslint-plugin-template": "^14.0.0",
+    "@angular-eslint/template-parser": "^14.0.0",
     "@angular/compiler-cli": "14.0.6",
     "@angular/language-service": "14.0.6",
-    "@angular/service-worker": "14.0.6",
     "@angular/localize": "14.0.6",
+    "@angular/service-worker": "14.0.6",
+    "@c8y/cli": "1016.0.128",
+    "@commitlint/cli": "^17.4.2",
+    "@commitlint/config-angular": "^17.4.2",
+    "@commitlint/config-conventional": "^17.4.2",
+    "@commitlint/prompt-cli": "^17.4.2",
+    "@semantic-release/changelog": "^6.0.2",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@types/jest": "^28.1.6",
+    "@typescript-eslint/eslint-plugin": "^5.50.0",
+    "@typescript-eslint/parser": "^5.50.0",
+    "eslint": "^8.33.0",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-cypress": "2.12.1",
+    "eslint-plugin-mocha": "10.1.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.3",
     "jest": "^28.1.3",
     "jest-preset-angular": "^12.2.0",
-    "typescript": "4.7.4",
-    "@c8y/cli": "1016.0.128"
+    "lint-staged": "^13.1.0",
+    "prettier": "^2.8.3",
+    "rimraf": "^4.1.2",
+    "semantic-release": "^20.1.0",
+    "typescript": "4.7.4"
   },
   "c8y": {
     "application": {
-      "name": "cumulocity-webrtc-webcam-plugin",
-      "description": "A package that allows to access the webcam of cumulocity devices via webrtc",
-      "contextPath": "cumulocity-webrtc-webcam-plugin",
-      "key": "cumulocity-webrtc-webcam-plugin-application-key",
+      "name": "WebRTC Webcam Plugin",
+      "description": "A package that allows to access the webcam of cumulocity devices via WebRTC",
+      "contextPath": "sag-ps-iot-pkg-webrtc-webcam-plugin",
+      "key": "sag-ps-iot-pkg-webrtc-webcam-plugin-application-key",
       "globalTitle": "Custom plugin for Module Federation",
       "tabsHorizontal": true,
       "isPackage": true,
@@ -64,22 +94,33 @@
         {
           "name": "Webcam plugin",
           "module": "WebcamPluginModule",
-          "path": "./webcam/webcam.module.ts",
+          "path": "./src/webcam/webcam.module.ts",
           "description": "Adds a webcam tab to supported devices."
         },
         {
           "name": "WebRTC ice server config plugin",
           "module": "IceServerConfigurationModule",
-          "path": "./ice-server-configuration/ice-server-configuration.module.ts",
+          "path": "./src/ice-server-configuration/ice-server-configuration.module.ts",
           "description": "Allows to configure the ice servers to be used for WebRTC."
         }
       ],
       "remotes": {
-        "cumulocity-webrtc-webcam-plugin": [
+        "sag-ps-iot-pkg-webrtc-webcam-plugin": [
           "WebcamPluginModule",
           "IceServerConfigurationModule"
         ]
-      }
+      },
+      "copy": [
+        {
+          "from": "CHANGELOG.md",
+          "to": "CHANGELOG.md",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "images",
+          "to": "images"
+        }
+      ]
     },
     "cli": {}
   },

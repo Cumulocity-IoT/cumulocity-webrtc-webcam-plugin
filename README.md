@@ -13,9 +13,11 @@ The plugin uses by default some [STUN servers](https://de.wikipedia.org/wiki/Ses
 Depending on the firewall setup beteen the two peers it might happen that a peer-to-peer connection can not be established.
 In that case a third party [TURN server](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT) is required, where the video traffic passes through. You can host such a server on your own with e.g. [Coturn](https://github.com/coturn/coturn).
 
-Have a look at the [cumulocity-electron-agent](https://github.com/SoftwareAG/cumulocity-electron-agent) for a sample device agent implementation supporting this feature.
+Have a look at this [thin-edge extension](https://github.com/thin-edge/thin-edge.io_examples/pull/54) for a sample Cumulocity agent, that supports this feature.
 
-Please note that this plugin will store **possible sensitive information** in form of e.g. **external and internal IP addresses** in Cumulocity operations in order to establish the peer-to-peer connection. A possible future solution to this could be to establish a websocket connection between the device and browser via a microservice to exchange those details without storing them in Cumulocity.
+The plugin uses Cumulocity's remote-access-connect feature in `PASSTHROUGH` mode to establish a WebSocket connection between the browser and an WebRTC server like e.g. [go2rtc](https://github.com/AlexxIT/go2rtc) running on the device. Ensure that this microservice together with it's `PASSTHROUGH` mode is available on your Cumulocity tenant.
+
+With the current set of changes this plugin is no longer compatible with the [electron-agent](https://github.com/SoftwareAG/cumulocity-electron-agent).
 
 ---
 

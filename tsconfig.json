@@ -11,7 +11,9 @@
     "module": "es2020",
     "lib": ["dom", "es2015", "es2016"]
   },
+  "exclude": ["node_modules", "**/*.spec.ts"],
   "angularCompilerOptions": {
-    "enableIvy": true
+    "enableIvy": true,
+    "strictTemplates": true
   }
 }

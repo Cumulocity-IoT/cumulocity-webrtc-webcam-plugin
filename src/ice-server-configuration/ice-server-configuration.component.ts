@@ -1,13 +1,13 @@
-import { Component, OnInit } from "@angular/core";
-import { AlertService, gettext } from "@c8y/ngx-components";
-import { IceServerConfigurationService } from "../ice-server-configuration.service";
+import { Component, OnInit } from '@angular/core';
+import { AlertService, gettext } from '@c8y/ngx-components';
+import { IceServerConfigurationService } from '../ice-server-configuration.service';
 
 @Component({
-  selector: "app-ice-server-configuration",
-  templateUrl: "./ice-server-configuration.component.html",
+  selector: 'app-ice-server-configuration',
+  templateUrl: './ice-server-configuration.component.html',
 })
 export class IceServerConfigurationComponent implements OnInit {
-  config: string = "";
+  config = '';
   parseable = false;
 
   constructor(
@@ -48,10 +48,10 @@ export class IceServerConfigurationComponent implements OnInit {
     }
     try {
       await this.iceConfig.setIceServers(config);
-      this.alert.saveSuccess(gettext("Configuration saved."));
+      this.alert.saveSuccess(gettext('Configuration saved.'));
       this.config = JSON.stringify(config, undefined, 2);
     } catch (e) {
-      this.alert.danger("Failed to save configuration.");
+      this.alert.danger('Failed to save configuration.');
     }
   }
 }
