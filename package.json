@@ -25,6 +25,7 @@
     "url": "https://github.com/SoftwareAG/cumulocity-webrtc-webcam-plugin/issues"
   },
   "homepage": "https://github.com/SoftwareAG/cumulocity-webrtc-webcam-plugin#readme",
+  "main": "./src/index",
   "dependencies": {
     "@angular/animations": "14.0.6",
     "@angular/cdk": "14.1.2",
@@ -92,13 +93,13 @@
         {
           "name": "Webcam plugin",
           "module": "WebcamPluginModule",
-          "path": "./webcam/webcam.module.ts",
+          "path": "./src/webcam/webcam.module.ts",
           "description": "Adds a webcam tab to supported devices."
         },
         {
           "name": "WebRTC ice server config plugin",
           "module": "IceServerConfigurationModule",
-          "path": "./ice-server-configuration/ice-server-configuration.module.ts",
+          "path": "./src/ice-server-configuration/ice-server-configuration.module.ts",
           "description": "Allows to configure the ice servers to be used for WebRTC."
         }
       ],
@@ -111,7 +112,8 @@
       "copy": [
         {
           "from": "CHANGELOG.md",
-          "to": "CHANGELOG.md"
+          "to": "CHANGELOG.md",
+          "noErrorOnMissing": true
         },
         {
           "from": "images",
