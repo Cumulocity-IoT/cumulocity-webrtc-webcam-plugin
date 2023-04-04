@@ -119,6 +119,10 @@
         {
           "from": "images",
           "to": "images"
+        },
+        {
+          "from": "LICENSE",
+          "to": "LICENSE.txt"
         }
       ]
     },
