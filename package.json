@@ -1,6 +1,6 @@
 {
   "name": "cumulocity-webrtc-webcam-plugin",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A package that allows to access the webcam of cumulocity devices via webrtc ",
   "scripts": {
     "start": "c8ycli server",
