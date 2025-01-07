@@ -1,5 +1,5 @@
 import type { ConfigurationOptions } from '@c8y/devkit';
-import { version, name } from './package.json';
+import { version, name, license, author } from './package.json';
 
 export default {
   runTime: {
@@ -9,6 +9,8 @@ export default {
     key: 'sag-ps-iot-pkg-webrtc-webcam-plugin-application-key',
     dynamicOptionsUrl: true,
     isPackage: true,
+    license,
+    author,
     package: 'plugin',
     exports: [
       {
@@ -29,22 +31,7 @@ export default {
         'WebcamPluginModule',
         'IceServerConfigurationModule'
       ]
-    },
-    copy: [
-      {
-        from: 'CHANGELOG.md',
-        to: 'CHANGELOG.md',
-        noErrorOnMissing: true
-      },
-      {
-        from: 'images',
-        to: 'images'
-      },
-      {
-        from: 'LICENSE',
-        to: 'LICENSE.txt'
-      }
-    ]
+    }
   },
   buildTime: {
     federation: [
@@ -62,6 +49,21 @@ export default {
       'ngx-bootstrap',
       '@ngx-translate/core',
       '@ngx-formly/core'
+    ],
+    copy: [
+      {
+        from: 'CHANGELOG.md',
+        to: 'CHANGELOG.md',
+        noErrorOnMissing: true
+      },
+      {
+        from: 'images',
+        to: 'images'
+      },
+      {
+        from: 'LICENSE',
+        to: 'LICENSE.txt'
+      }
     ]
   }
 } as const satisfies ConfigurationOptions;
