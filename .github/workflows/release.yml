@@ -37,14 +37,7 @@ jobs:
         run: npm run lint
 
       - name: Build
-        run: npm run build:ci
-
-      - name: Zip build
-        run: |
-          cd dist/apps/sag-ps-iot-pkg-webrtc-webcam-plugin
-          zip -r -q ../../build.zip *
-          cd ../../..
-          rm -r dist/apps
+        run: npm run build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
@@ -53,7 +46,7 @@ jobs:
           if-no-files-found: error
           retention-days: 5
           path: |
-            dist/build.zip
+            dist/sag-ps-iot-pkg-webrtc-webcam-plugin.zip
 
   release:
     name: Release

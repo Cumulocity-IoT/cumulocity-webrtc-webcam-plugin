@@ -1,7 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { BasicAuth, IManagedObject } from '@c8y/client';
-import { concatMap } from 'rxjs/operators';
 import { IceServerConfigurationService } from '../ice-server-configuration.service';
 import { SignalingConnection, SignalingService } from './signaling.service';
 
@@ -18,11 +17,11 @@ enum WebRTCSignalingMessageTypes {
 })
 export class WebcamComponent implements OnDestroy {
   // Global State
-  pc: RTCPeerConnection;
-  remoteStream: MediaStream;
-  connectionUUID: string;
+  pc: RTCPeerConnection | undefined;
+  remoteStream: MediaStream | undefined;
+  connectionUUID: string | undefined;
   device: IManagedObject;
-  signaling: SignalingConnection;
+  signaling: SignalingConnection | undefined;
 
   constructor(
     private activatedRoute: ActivatedRoute,
@@ -30,7 +29,8 @@ export class WebcamComponent implements OnDestroy {
     private basicAuth: BasicAuth,
     private signalingService: SignalingService
   ) {
-    this.device = this.activatedRoute.parent.snapshot.data.contextData;
+    const { contextData } = this.activatedRoute.parent?.snapshot.data || {};
+    this.device = contextData;
   }
 
   ngOnDestroy(): void {
@@ -40,6 +40,9 @@ export class WebcamComponent implements OnDestroy {
   async call() {
     const { token, xsrf } = this.getToken();
     const configId = this.signalingService.extractRCAIdFromDevice(this.device);
+    if (!configId) {
+      return;
+    }
     this.signaling = this.signalingService.establishSignalingConnection(
       this.device.id,
       configId,
@@ -55,7 +58,7 @@ export class WebcamComponent implements OnDestroy {
     this.remoteStream = new MediaStream();
     this.pc.ontrack = (event) => {
       event.streams[0].getTracks().forEach((track) => {
-        this.remoteStream.addTrack(track);
+        this.remoteStream?.addTrack(track);
       });
     };
     this.pc.onconnectionstatechange = (event) => {
@@ -64,17 +67,16 @@ export class WebcamComponent implements OnDestroy {
 
     this.signaling
       .responses$()
-      .pipe(concatMap((tmp: Blob) => tmp.text()))
+      // .pipe(concatMap((tmp: Blob) => tmp.text()))
       .subscribe((msg) => {
         try {
           const parsed = JSON.parse(msg);
           if (parsed.type === WebRTCSignalingMessageTypes.answer) {
-            this.pc.setRemoteDescription(
+            this.pc?.setRemoteDescription(
               new RTCSessionDescription({ type: 'answer', sdp: parsed.value })
             );
           } else if (parsed.type === WebRTCSignalingMessageTypes.candidate) {
-            this.pc
-              .addIceCandidate({ candidate: parsed.value, sdpMid: '0' })
+            this.pc?.addIceCandidate({ candidate: parsed.value, sdpMid: '0' })
               .catch((tmp) => console.error(tmp));
           }
         } catch (e) {
@@ -95,9 +97,12 @@ export class WebcamComponent implements OnDestroy {
   }
 
   private async getOffer(signaling: SignalingConnection): Promise<void> {
-    const promise = new Promise<void>((resolve) => {
+    const promise = new Promise<void>((resolve, reject) => {
+      if (!this.pc) {
+        return reject();
+      }
       this.pc.onicegatheringstatechange = () => {
-        if (this.pc.iceGatheringState === 'complete') {
+        if (this.pc?.iceGatheringState === 'complete') {
           console.log('Gathering completed');
           resolve();
         }
@@ -120,17 +125,17 @@ export class WebcamComponent implements OnDestroy {
         }
       };
     });
-    const offerDescription = await this.pc.createOffer({
+    const offerDescription = await this.pc?.createOffer({
       offerToReceiveAudio: true,
       offerToReceiveVideo: true,
     });
     signaling.sendMsg(
       JSON.stringify({
         type: WebRTCSignalingMessageTypes.offer,
-        value: offerDescription.sdp,
+        value: offerDescription?.sdp,
       })
     );
-    await this.pc.setLocalDescription(offerDescription);
+    await this.pc?.setLocalDescription(offerDescription);
     return await promise;
   }
 
