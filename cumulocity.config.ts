@@ -4,7 +4,7 @@ import { version, name, license, author } from './package.json';
 export default {
   runTime: {
     version,
-    name,
+    name: 'WebRTC Webcam Plugin',
     contextPath: 'sag-ps-iot-pkg-webrtc-webcam-plugin',
     key: 'sag-ps-iot-pkg-webrtc-webcam-plugin-application-key',
     dynamicOptionsUrl: true,

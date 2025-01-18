@@ -7,9 +7,6 @@ on:
       - beta
       - '*.x'
       - '*.*.x'
-  release:
-    types: 
-      - created
 
 permissions:
   contents: write
@@ -17,8 +14,38 @@ permissions:
   pull-requests: write
 
 jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    outputs:
+      new-version: ${{ steps.new-version.outputs.version }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      - name: Save new version
+        id: new-version
+        run: |
+          echo "version=$(npm pkg get version | xargs)" >> $GITHUB_OUTPUT
+
   build:
-    if: github.event_name == 'release'
+    needs: [release]
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -27,6 +54,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: v${{ needs.release.outputs.new-version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -54,29 +82,6 @@ jobs:
         with:
           prerelease: false
           generate_release_notes: false
+          tag_name: v${{ needs.release.outputs.new-version }}
           files: |
             ./dist/sag-ps-iot-pkg-webrtc-webcam-plugin.zip
-
-  release:
-    if: github.event_name == 'push'
-    name: Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
