@@ -114,7 +114,15 @@ export class WebcamComponent {
 
     const details$ = mediaStreamAndPeerConnection$.pipe(
       switchMap(({ mediaStream, peerConnection }) => {
-        const signaling = signalingConnection(deviceId, configId, token, xsrf);
+        const signaling = signalingConnection({
+          deviceId,
+          configId,
+          token,
+          xsrf,
+          host: '127.0.0.1',
+          port: '1984',
+          webcam: 'tedge_cam'
+        });
 
         const signalingMessages$ = signaling.pipe(
           tap((msg) => {

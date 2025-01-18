@@ -1,13 +1,9 @@
-import { Injectable } from '@angular/core';
-import { IManagedObject } from '@c8y/client';
-import { Observable, Subscriber, Subject, TeardownLogic, Subscription } from 'rxjs';
-import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
+import { Observable, Subscriber, TeardownLogic, Subscription } from 'rxjs';
+import { webSocket } from 'rxjs/webSocket';
 
 export class TwoWayObservable<T = string> extends Observable<T> {
   constructor(
-    subscribe: (
-      subscriber: Subscriber<T>
-    ) => TeardownLogic,
+    subscribe: (subscriber: Subscriber<T>) => TeardownLogic,
     private sendCallBack: (msg: T) => void
   ) {
     super(subscribe);
@@ -18,16 +14,19 @@ export class TwoWayObservable<T = string> extends Observable<T> {
   }
 }
 
-export function signalingConnection(
-  deviceId: string,
-  configId: string,
-  token: string,
-  xsrf: string
-) {
-  const queryParams = token
-    ? `token=${token}&XSRF-TOKEN=${xsrf}`
-    : `XSRF-TOKEN=${xsrf}`;
-  const url = `/service/remoteaccess/client/${deviceId}/configurations/${configId}?${queryParams}`;
+export function signalingConnection(connectionDetails: {
+  deviceId: string;
+  configId: string;
+  token: string;
+  xsrf: string;
+  host: string;
+  port: string;
+  webcam: string;
+}) {
+  const queryParams = connectionDetails.token
+    ? `token=${connectionDetails.token}&XSRF-TOKEN=${connectionDetails.xsrf}`
+    : `XSRF-TOKEN=${connectionDetails.xsrf}`;
+  const url = `/service/remoteaccess/client/${connectionDetails.deviceId}/configurations/${connectionDetails.configId}?${queryParams}`;
 
   let subscribers = new Array<Subscriber<string>>();
   let sub: Subscription | undefined;
@@ -124,8 +123,8 @@ export function signalingConnection(
     const nonce = btoa(String.fromCharCode.apply(null, [...randomBytes]));
     ws.next(
       new TextEncoder().encode(
-        `GET /api/ws?src=tedge_cam HTTP/1.1\r\n` +
-          `Host: 127.0.0.1:1984\r\n` +
+        `GET /api/ws?src=${connectionDetails.webcam} HTTP/1.1\r\n` +
+          `Host: ${connectionDetails.host}:${connectionDetails.port}\r\n` +
           `Connection: keep-alive, Upgrade\r\n` +
           `Accept: */*\r\n` +
           `Upgrade: websocket\r\n` +
@@ -266,8 +265,6 @@ export function signalingConnection(
     subscribers.forEach((sub) => sub.next(message));
   };
 
-  
-
   return new TwoWayObservable<string>(
     (subscriber) => {
       if (!sub) {
@@ -282,7 +279,6 @@ export function signalingConnection(
             sub?.unsubscribe();
             sub = undefined;
           }
-          
         },
       };
     },
