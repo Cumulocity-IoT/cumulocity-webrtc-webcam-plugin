@@ -1,6 +1,6 @@
 <c8y-title translate>Webcam</c8y-title>
 <c8y-action-bar-item placement="right">
-  <button class="btn btn-link" type="button" [disabled]="pc" (click)="call()">
+  <button class="btn btn-link" type="button" [disabled]="mediaStream$" (click)="play()">
     <i [c8yIcon]="'play'"></i> Play
   </button>
 </c8y-action-bar-item>
@@ -9,17 +9,17 @@
   <button
     class="btn btn-link"
     type="button"
-    [disabled]="!pc"
-    (click)="hangUp()"
+    [disabled]="!mediaStream$"
+    (click)="stop()"
   >
     <i [c8yIcon]="'stop'"></i> Stop
   </button>
 </c8y-action-bar-item>
 
-<div class="d-flex a-i-center j-c-center">
+<div class="content-fullpage d-flex a-i-center j-c-center">
   <video
-    style="height: 70vh; width: 50vw"
-    [srcObject]="remoteStream"
+    style="height: 100%; width: 100%"
+    [srcObject]="mediaStream$ | async"
     autoplay
     playsinline
     #remoteVideo

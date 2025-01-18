@@ -19,7 +19,7 @@ export class IceServerConfigurationService {
         category: this.configCategory,
         key: this.configKey,
       });
-      const value = data.value;
+      const value = data.value || '';
       const parsedValue = JSON.parse(value);
       if (Array.isArray(parsedValue)) {
         iceServers = parsedValue;
