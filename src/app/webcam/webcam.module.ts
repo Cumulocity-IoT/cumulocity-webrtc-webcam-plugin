@@ -2,24 +2,22 @@ import { NgModule } from '@angular/core';
 import { WebcamComponent } from './webcam.component';
 import {
   CoreModule,
-  gettext,
   hookRoute,
+  hookTab,
   ViewContext,
 } from '@c8y/ngx-components';
-import { WebcamGuard } from './webcam.guard';
+import { WebcamTabFactory } from './webcam-tab.factory';
 
 @NgModule({
   imports: [CoreModule],
   declarations: [WebcamComponent],
   providers: [
+    hookTab(WebcamTabFactory),
     hookRoute({
-      path: 'webcam',
+      path: 'webrtc-webcam/:rcaId',
       context: ViewContext.Device,
       component: WebcamComponent,
-      canActivate: [WebcamGuard],
-      label: gettext('Webcam'),
-      priority: 0,
-      icon: 'video-camera',
+      tabs: []
     }),
   ],
 })

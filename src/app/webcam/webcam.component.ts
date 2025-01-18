@@ -3,6 +3,15 @@ import { ActivatedRoute } from '@angular/router';
 import { BasicAuth, IManagedObject } from '@c8y/client';
 import { IceServerConfigurationService } from '../ice-server-configuration.service';
 import { SignalingConnection, SignalingService } from './signaling.service';
+import {
+  BehaviorSubject,
+  combineLatest,
+  distinctUntilChanged,
+  filter,
+  map,
+  NEVER,
+  Subscription,
+} from 'rxjs';
 
 enum WebRTCSignalingMessageTypes {
   offer = 'webrtc/offer',
@@ -20,8 +29,10 @@ export class WebcamComponent implements OnDestroy {
   pc: RTCPeerConnection | undefined;
   remoteStream: MediaStream | undefined;
   connectionUUID: string | undefined;
-  device: IManagedObject;
   signaling: SignalingConnection | undefined;
+
+  connectTrigger$ = new BehaviorSubject<boolean>(false);
+  connectionSub: Subscription | undefined;
 
   constructor(
     private activatedRoute: ActivatedRoute,
@@ -29,22 +40,46 @@ export class WebcamComponent implements OnDestroy {
     private basicAuth: BasicAuth,
     private signalingService: SignalingService
   ) {
-    const { contextData } = this.activatedRoute.parent?.snapshot.data || {};
-    this.device = contextData;
+    const rcaId$ = this.activatedRoute.params.pipe(
+      map((params) => params['rcaId']),
+      filter(Boolean),
+      distinctUntilChanged()
+    );
+    const deviceId$ =
+      this.activatedRoute.parent?.data.pipe(
+        map((data) => data['contextData']['id']),
+        filter(Boolean),
+        distinctUntilChanged()
+      ) || NEVER;
+
+    this.connectionSub = combineLatest([deviceId$, rcaId$, this.connectTrigger$]).subscribe(
+      ([deviceId, configId, connect]) => {
+        this.hangUp();
+        if (connect) {
+          this.call(deviceId, configId);
+        }
+      }
+    );
   }
 
   ngOnDestroy(): void {
+    this.connectionSub?.unsubscribe();
+    this.connectTrigger$.next(false);
     this.hangUp();
   }
 
-  async call() {
+  play() {
+    this.connectTrigger$.next(true);
+  }
+
+  stop() {
+    this.connectTrigger$.next(false);
+  }
+
+  private async call(deviceId: string, configId: string) {
     const { token, xsrf } = this.getToken();
-    const configId = this.signalingService.extractRCAIdFromDevice(this.device);
-    if (!configId) {
-      return;
-    }
     this.signaling = this.signalingService.establishSignalingConnection(
-      this.device.id,
+      deviceId,
       configId,
       token,
       xsrf
@@ -76,7 +111,8 @@ export class WebcamComponent implements OnDestroy {
               new RTCSessionDescription({ type: 'answer', sdp: parsed.value })
             );
           } else if (parsed.type === WebRTCSignalingMessageTypes.candidate) {
-            this.pc?.addIceCandidate({ candidate: parsed.value, sdpMid: '0' })
+            this.pc
+              ?.addIceCandidate({ candidate: parsed.value, sdpMid: '0' })
               .catch((tmp) => console.error(tmp));
           }
         } catch (e) {
@@ -88,7 +124,7 @@ export class WebcamComponent implements OnDestroy {
     await this.getOffer(this.signaling);
   }
 
-  async hangUp() {
+  private async hangUp() {
     this.pc?.close();
     this.signaling?.close();
     this.remoteStream = undefined;
