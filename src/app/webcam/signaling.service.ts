@@ -1,101 +1,61 @@
 import { Injectable } from '@angular/core';
 import { IManagedObject } from '@c8y/client';
-import { merge, Observable, Subject } from 'rxjs';
-import { buffer, filter } from 'rxjs/operators';
+import { Observable, Subscriber, Subject, TeardownLogic, Subscription } from 'rxjs';
+import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 
-export class SignalingConnection {
-  private ws: WebSocket;
-  private responses = new Subject<string>();
-  private messagesToSend = new Subject<string>();
-  private open = false;
-  private reciveBuffer = new Uint8Array(0);
-  constructor(deviceId: string, configId: string, token: string, xsrf: string) {
-    const queryParams = token
-      ? `token=${token}&XSRF-TOKEN=${xsrf}`
-      : `XSRF-TOKEN=${xsrf}`;
-    const url = `/service/remoteaccess/client/${deviceId}/configurations/${configId}?${queryParams}`;
-    const bufferTrigger = new Subject<void>();
-    this.ws = new WebSocket(url, ['binary']);
-    this.ws.onmessage = async (msg) => {
-      console.log('msg', msg);
-      if (!this.open) {
-        const dataAsString =
-          msg.data instanceof Blob
-            ? await msg.data.text()
-            : new String(msg.data);
-        console.log(JSON.stringify(dataAsString));
-        if (
-          dataAsString.startsWith('HTTP/1.1 101') &&
-          dataAsString.endsWith('\r\n\r\n')
-        ) {
-          console.log(true);
-          this.open = true;
-          bufferTrigger.next();
-        }
-        return;
-      }
-
-      if (msg.data instanceof Blob) {
-        // const data = await msg.data.text()
-        // console.log(data);
-        const arr = new Uint8Array(await msg.data.arrayBuffer());
-        this.processData(arr);
-      }
-
-      
-
-      // this.responses.next(msg.data);
-    };
-    this.ws.onclose = () => {
-      console.log('closed');
-      this.responses.complete();
-    };
-    this.ws.onerror = () => {
-      console.log('error');
-      this.responses.error('error');
-    };
-    const buffered = this.messagesToSend.pipe(buffer(bufferTrigger));
-    const whileConnectionOpen = this.messagesToSend.pipe(
-      filter(() => this.ws.readyState === WebSocket.OPEN && this.open)
-    );
-    merge(buffered, whileConnectionOpen).subscribe((msg) => {
-      console.log(msg);
-      const sendMsg = (msgToSend: string) => {
-        const payloadSize = msgToSend;
-        // let utf8Encode = new TextEncoder();
-        // utf8Encode.encode(msgToSend);
-        const buffer = this.createFrame(msgToSend);
-        this.ws.send(buffer);
-      };
-      if (Array.isArray(msg)) {
-        msg.forEach((entry) => sendMsg(entry));
-      } else {
-        sendMsg(msg);
-      }
-    });
-    this.ws.onopen = () => {
-      console.log('open');
-      // bufferTrigger.next();
-
-      const randomBytes = new Uint8Array(16);
-      crypto.getRandomValues(randomBytes);
-      const nonce = btoa(String.fromCharCode.apply(null, [...randomBytes]));
-      this.ws.send(
-        new Blob([
-          `GET /api/ws?src=tedge_cam HTTP/1.1\r\n` +
-            `Host: 127.0.0.1:1984\r\n` +
-            `Connection: keep-alive, Upgrade\r\n` +
-            `Accept: */*\r\n` +
-            `Upgrade: websocket\r\n` +
-            `Sec-WebSocket-Key: ${nonce}\r\n` +
-            `Sec-WebSocket-Version: 13\r\n` +
-            `\r\n`,
-        ])
-      );
-    };
+export class TwoWayObservable<T = string> extends Observable<T> {
+  constructor(
+    subscribe: (
+      subscriber: Subscriber<T>
+    ) => TeardownLogic,
+    private sendCallBack: (msg: T) => void
+  ) {
+    super(subscribe);
   }
 
-  createFrame(data: string) {
+  send(msg: T) {
+    this.sendCallBack(msg);
+  }
+}
+
+export function signalingConnection(
+  deviceId: string,
+  configId: string,
+  token: string,
+  xsrf: string
+) {
+  const queryParams = token
+    ? `token=${token}&XSRF-TOKEN=${xsrf}`
+    : `XSRF-TOKEN=${xsrf}`;
+  const url = `/service/remoteaccess/client/${deviceId}/configurations/${configId}?${queryParams}`;
+
+  let subscribers = new Array<Subscriber<string>>();
+  let sub: Subscription | undefined;
+
+  let messagesToSend: string[] = [];
+  let open = false;
+  let reciveBuffer = new Uint8Array(0);
+  const ws = webSocket<Uint8Array>({
+    url: url,
+    protocol: 'binary',
+    binaryType: 'arraybuffer',
+    serializer: (msg) => {
+      return msg;
+    },
+    deserializer: (e) => {
+      if (e.data instanceof ArrayBuffer) {
+        return new Uint8Array(e.data);
+      }
+      throw Error('wrong type');
+    },
+  });
+
+  const sendMessage = (msg: string) => {
+    console.log('sending msg', msg);
+    ws.next(createFrame(msg));
+  };
+
+  const createFrame = (data: string) => {
     const messageBytes = new TextEncoder().encode(data);
     const messageLength = messageBytes.length;
 
@@ -156,40 +116,97 @@ export class SignalingConnection {
     }
 
     return frame;
-  }
+  };
 
-  processData(data: Uint8Array) {
-    // Combine new data with existing buffer
-    const newBuffer = new Uint8Array(this.reciveBuffer.length + data.length);
-    newBuffer.set(this.reciveBuffer);
-    newBuffer.set(data, this.reciveBuffer.length);
-    this.reciveBuffer = newBuffer;
+  const sendHandShake = () => {
+    const randomBytes = new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    const nonce = btoa(String.fromCharCode.apply(null, [...randomBytes]));
+    ws.next(
+      new TextEncoder().encode(
+        `GET /api/ws?src=tedge_cam HTTP/1.1\r\n` +
+          `Host: 127.0.0.1:1984\r\n` +
+          `Connection: keep-alive, Upgrade\r\n` +
+          `Accept: */*\r\n` +
+          `Upgrade: websocket\r\n` +
+          `Sec-WebSocket-Key: ${nonce}\r\n` +
+          `Sec-WebSocket-Version: 13\r\n` +
+          `\r\n`
+      )
+    );
+  };
 
+  const onMessage = (data: Uint8Array) => {
+    const newBuffer = new Uint8Array(reciveBuffer.length + data.length);
+    newBuffer.set(reciveBuffer);
+    newBuffer.set(data, reciveBuffer.length);
+    reciveBuffer = newBuffer;
+    if (!open) {
+      const textDecoder = new TextDecoder('utf-8');
+      const message = textDecoder.decode(reciveBuffer);
+      const dataAsString = message;
+      console.log(message);
+
+      const endOfHTTP = '\r\n\r\n';
+      if (!dataAsString.includes(endOfHTTP)) {
+        console.log('did not yet get a FULL HTTP packet');
+        return;
+      }
+
+      if (!dataAsString.startsWith('HTTP/1.1 101')) {
+        throw new Error('Wrong status code, expected 101');
+      }
+
+      const httpPacketEndMarkerPosition =
+        dataAsString.indexOf(endOfHTTP) + endOfHTTP.length;
+      const httpPacket = dataAsString.slice(0, httpPacketEndMarkerPosition);
+      console.log(httpPacket);
+      // todo add old data here
+      reciveBuffer = new Uint8Array(0);
+      console.log(messagesToSend);
+      while (messagesToSend.length) {
+        const queuedMsg = messagesToSend.shift();
+        if (queuedMsg !== undefined) {
+          sendMessage(queuedMsg);
+        } else {
+          break;
+        }
+      }
+      console.log('OPEN', open);
+      open = true;
+      return;
+    }
+
+    console.log(reciveBuffer);
+    processData();
+  };
+
+  const processData = () => {
     // Process frames while we have enough data
-    while (this.reciveBuffer.length >= 2) {
-      const frameInfo = this.parseFrameHeader();
+    while (reciveBuffer.length >= 2) {
+      const frameInfo = parseFrameHeader();
       if (!frameInfo) return;
 
       const { payloadLength, headerLength } = frameInfo;
       const totalLength = headerLength + payloadLength;
 
       // Check if we have the complete frame
-      if (this.reciveBuffer.length < totalLength) return;
+      if (reciveBuffer.length < totalLength) return;
 
       // Extract and process the frame
-      const frame = this.extractFrame(headerLength, payloadLength);
+      const frame = extractFrame(headerLength, payloadLength);
       if (frame) {
-        this.handleFrame(frame);
+        handleFrame(frame);
       }
 
       // Remove processed frame from buffer
-      this.reciveBuffer = this.reciveBuffer.slice(totalLength);
+      reciveBuffer = reciveBuffer.slice(totalLength);
     }
-  }
+  };
 
-  parseFrameHeader() {
-    const firstByte = this.reciveBuffer[0];
-    const secondByte = this.reciveBuffer[1];
+  const parseFrameHeader = () => {
+    const firstByte = reciveBuffer[0];
+    const secondByte = reciveBuffer[1];
 
     const fin = (firstByte & 0x80) === 0x80;
     const opcode = firstByte & 0x0f;
@@ -199,14 +216,14 @@ export class SignalingConnection {
 
     // Handle extended payload lengths
     if (payloadLength === 126) {
-      if (this.reciveBuffer.length < 4) return null;
-      payloadLength = (this.reciveBuffer[2] << 8) | this.reciveBuffer[3];
+      if (reciveBuffer.length < 4) return null;
+      payloadLength = (reciveBuffer[2] << 8) | reciveBuffer[3];
       headerLength = 4;
     } else if (payloadLength === 127) {
-      if (this.reciveBuffer.length < 10) return null;
+      if (reciveBuffer.length < 10) return null;
       payloadLength = 0;
       for (let i = 0; i < 8; i++) {
-        payloadLength = (payloadLength << 8) | this.reciveBuffer[2 + i];
+        payloadLength = (payloadLength << 8) | reciveBuffer[2 + i];
       }
       headerLength = 10;
     }
@@ -217,75 +234,63 @@ export class SignalingConnection {
     }
 
     return { payloadLength, headerLength, masked, opcode, fin };
-  }
+  };
 
-  extractFrame(headerLength: number, payloadLength: number) {
-    const masked = (this.reciveBuffer[1] & 0x80) === 0x80;
+  const extractFrame = (headerLength: number, payloadLength: number) => {
+    const masked = (reciveBuffer[1] & 0x80) === 0x80;
     const payload = new Uint8Array(payloadLength);
 
     if (masked) {
-      const maskKey = this.reciveBuffer.slice(headerLength - 4, headerLength);
+      const maskKey = reciveBuffer.slice(headerLength - 4, headerLength);
       // Unmask the payload
       for (let i = 0; i < payloadLength; i++) {
-        payload[i] = this.reciveBuffer[headerLength + i] ^ maskKey[i % 4];
+        payload[i] = reciveBuffer[headerLength + i] ^ maskKey[i % 4];
       }
     } else {
       payload.set(
-        this.reciveBuffer.slice(headerLength, headerLength + payloadLength)
+        reciveBuffer.slice(headerLength, headerLength + payloadLength)
       );
     }
 
     return payload;
-  }
+  };
 
-  handleFrame(payload: Uint8Array) {
+  const handleFrame = (payload: Uint8Array) => {
     // Convert payload to text
     const textDecoder = new TextDecoder('utf-8');
     const message = textDecoder.decode(payload);
 
     // Call message callback if set
-    this.responses.next(message);
+    // this.responses.next(message);
     console.log(message);
-  }
+    subscribers.forEach((sub) => sub.next(message));
+  };
 
-  sendMsg(msg: string) {
-    console.log('sending', msg);
-    this.messagesToSend.next(msg);
-  }
+  
 
-  responses$(): Observable<string> {
-    return this.responses.asObservable();
-  }
-
-  close() {
-    this.ws.close();
-    this.messagesToSend.complete();
-    this.responses.complete();
-  }
-}
-
-@Injectable({ providedIn: 'root' })
-export class SignalingService {
-  extractRCAIdFromDevice(device: IManagedObject): string | null {
-    const { c8y_RemoteAccessList: remoteAccessList } = device;
-    if (!remoteAccessList || !Array.isArray(remoteAccessList)) {
-      return null;
+  return new TwoWayObservable<string>(
+    (subscriber) => {
+      if (!sub) {
+        sendHandShake();
+        sub = ws.subscribe((data) => onMessage(data));
+      }
+      subscribers.push(subscriber);
+      return {
+        unsubscribe: () => {
+          subscribers = subscribers.filter((sub) => sub !== subscriber);
+          if (!subscribers.length) {
+            sub?.unsubscribe();
+            sub = undefined;
+          }
+          
+        },
+      };
+    },
+    (msg: string) => {
+      if (open && !messagesToSend.length) {
+        return sendMessage(msg);
+      }
+      messagesToSend.push(msg);
     }
-
-    const entry = remoteAccessList.find(
-      ({ name }) =>
-        typeof name === 'string' && name.toLowerCase().includes('webcam')
-    );
-
-    return entry?.id;
-  }
-
-  establishSignalingConnection(
-    deviceId: string,
-    configId: string,
-    token: string,
-    xsrf: string
-  ): SignalingConnection {
-    return new SignalingConnection(deviceId, configId, token, xsrf);
-  }
+  );
 }
