@@ -35,12 +35,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SoftwareAG/cumulocity-webrtc-webcam-plugin.git"
+    "url": "git+https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin.git"
   },
   "bugs": {
-    "url": "https://github.com/SoftwareAG/cumulocity-webrtc-webcam-plugin/issues"
+    "url": "https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/issues"
   },
-  "homepage": "https://github.com/SoftwareAG/cumulocity-webrtc-webcam-plugin#readme",
+  "homepage": "https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin#readme",
   "devDependencies": {
     "@angular-devkit/build-angular": "^18.2.10",
     "@angular/cli": "^18.2.10",
