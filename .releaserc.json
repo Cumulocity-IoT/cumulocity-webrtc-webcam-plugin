@@ -31,19 +31,9 @@
       }
     ],
     [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "bash ./replaceVersion.sh ${nextRelease.version}"
-      }
-    ],
-    [
       "@semantic-release/github",
       {
-        "assets": [
-          {
-            "path": "sag-ps-iot-pkg-webrtc-webcam-plugin-*.zip"
-          }
-        ]
+        "assets": []
       }
     ]
   ],
