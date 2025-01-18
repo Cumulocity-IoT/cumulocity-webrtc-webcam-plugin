@@ -13,30 +13,43 @@ The plugin uses by default some [STUN servers](https://de.wikipedia.org/wiki/Ses
 Depending on the firewall setup beteen the two peers it might happen that a peer-to-peer connection can not be established.
 In that case a third party [TURN server](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT) is required, where the video traffic passes through. You can host such a server on your own with e.g. [Coturn](https://github.com/coturn/coturn).
 
-Have a look at this [thin-edge extension](https://github.com/thin-edge/thin-edge.io_examples/pull/54) for a sample Cumulocity agent, that supports this feature.
+The plugin works with devices that have [go2rtc](https://github.com/AlexxIT/go2rtc) installed and configured and are running a Cumulocity agent which supports the [Cloud Remote Access feature of Cumulocity](https://cumulocity.com/docs/cloud-remote-access/cra-general-aspects/). The recommended agent would be [thin-edge.io](https://thin-edge.io/).
 
 The plugin uses Cumulocity's remote-access-connect feature in `PASSTHROUGH` mode to establish a WebSocket connection between the browser and an WebRTC server like e.g. [go2rtc](https://github.com/AlexxIT/go2rtc) running on the device. Ensure that this microservice together with it's `PASSTHROUGH` mode is available on your Cumulocity tenant.
 
-With the current set of changes this plugin is no longer compatible with the [electron-agent](https://github.com/SoftwareAG/cumulocity-electron-agent).
+## Installation instructions go2rtc
 
-# Useful links 
+- download the latest release of [go2rtc](https://github.com/AlexxIT/go2rtc/releases) that matches the architecture of your device to your current users home directory
+```bash
+wget https://github.com/AlexxIT/go2rtc/releases/latest/download/go2rtc_linux_arm64
+```
+- copy the `go2rtc.yaml` file also into your home directory
+- Adjust the `streams` section of the `go2rtc.yaml` file according to your needs, just keep the `tedge_cam` as the name of your stream.
+- You can verify the setup, by starting it temporarily by executing the previously downloaded binary:
+```bash
+./go2rtc_linux_arm64
+```
+by connecting to `http://<local-ip-of-tedge>:1984/stream.html?src=tedge_cam&mode=webrtc` with your browser you should be able to see the camera stream.
+- Depending on your firewall setup you may also need to add a [TURN server](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT) to the `ice_servers` section.
+- You might want to adjust the `listen` attributes of the `api`, `rtsp`, and `srtp` sections of these files to be prefixed with `127.0.0.1` (e.g. `127.0.0.1:1984` for the `api`) to only allow local connections
+- copy and adjust the `go2rtc.service` file to `/etc/systemd/system/go2rtc.service`, adjust it to your setup (e.g. the `ExecStart`, `WorkingDirectory`, `User` and `Group` settings might need to be adjusted if you are not using a user called `ubuntu`)
+- you can then start and enable the service:
+```bash
+sudo systemctl start go2rtc
+sudo systemctl enable go2rtc
+```
 
-📘 Explore the Knowledge Base   
-Dive into a wealth of Cumulocity IoT tutorials and articles in our [Tech Community Knowledge Base](https://tech.forums.softwareag.com/tags/c/knowledge-base/6/cumulocity-iot).  
+## Usage
 
-💡 Get Expert Answers    
-Stuck or just curious? Ask the Cumulocity IoT experts directly on our [Forum](https://tech.forums.softwareag.com/tags/c/forum/1/Cumulocity-IoT).   
+- Install the plugin to  your cockpit and/or devicemanagement application.
+- Go to your device in the devicemanagement application and create a new Remote Access configuration.
+The configuration should be of type `PASSTHROUGH`, the host should point to the host running [go2rtc](https://github.com/AlexxIT/go2rtc) (most probably `127.0.0.1` if you are running it on the same device as your thin-edge agent) and the port should be configured to the http port of go2rtc (in the default configuration that should be `1984`).
+The name of the configuration should start with `webcam:` as this is used to identify the configuration as compatbile to be used by this plugin.
+- after refreshing the page or navigating another time to the device you should see a new tab with the configuration name that you gave it (without the `webcam:` prefix), where you can start the video stream via the play button in the action bar.
 
-🚀 Try Cumulocity IoT    
-See Cumulocity IoT in action with a [Free Trial](https://techcommunity.softwareag.com/en_en/downloads.html).   
+## Debugging
 
-✍️ Share Your Feedback    
-Your input drives our innovation. If you find a bug, please create an issue in the repository. If you’d like to share your ideas or feedback, please post them [here](https://tech.forums.softwareag.com/c/feedback/2). 
-
-More to discover
-* [How to install a Microfrontend Plugin on a tenant and use it in an app?](https://tech.forums.softwareag.com/t/how-to-install-a-microfrontend-plugin-on-a-tenant-and-use-it-in-an-app/268981)  
-* [Cumulocity IoT Web Development Tutorial - Part 1: Start your journey](https://tech.forums.softwareag.com/t/cumulocity-iot-web-development-tutorial-part-1-start-your-journey/259613) 
-* [The power of micro frontends – How to dynamically extend Cumulocity IoT Frontends](https://tech.forums.softwareag.com/t/the-power-of-micro-frontends-how-to-dynamically-extend-cumulocity-iot-frontends/266665) 
+- the WebRTC connection can be e.g. debugged from firefox by visiting `about:webrtc`.
 
 ---
 
