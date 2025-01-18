@@ -50,7 +50,6 @@ export function signalingConnection(connectionDetails: {
   });
 
   const sendMessage = (msg: string) => {
-    console.log('sending msg', msg);
     ws.next(createFrame(msg));
   };
 
@@ -144,11 +143,9 @@ export function signalingConnection(connectionDetails: {
       const textDecoder = new TextDecoder('utf-8');
       const message = textDecoder.decode(reciveBuffer);
       const dataAsString = message;
-      console.log(message);
 
       const endOfHTTP = '\r\n\r\n';
       if (!dataAsString.includes(endOfHTTP)) {
-        console.log('did not yet get a FULL HTTP packet');
         return;
       }
 
@@ -158,11 +155,8 @@ export function signalingConnection(connectionDetails: {
 
       const httpPacketEndMarkerPosition =
         dataAsString.indexOf(endOfHTTP) + endOfHTTP.length;
-      const httpPacket = dataAsString.slice(0, httpPacketEndMarkerPosition);
-      console.log(httpPacket);
-      // todo add old data here
-      reciveBuffer = new Uint8Array(0);
-      console.log(messagesToSend);
+      const restOfBuffer = dataAsString.slice(httpPacketEndMarkerPosition);
+      reciveBuffer = new TextEncoder().encode(restOfBuffer);
       while (messagesToSend.length) {
         const queuedMsg = messagesToSend.shift();
         if (queuedMsg !== undefined) {
@@ -171,12 +165,9 @@ export function signalingConnection(connectionDetails: {
           break;
         }
       }
-      console.log('OPEN', open);
       open = true;
       return;
     }
-
-    console.log(reciveBuffer);
     processData();
   };
 
@@ -259,9 +250,6 @@ export function signalingConnection(connectionDetails: {
     const textDecoder = new TextDecoder('utf-8');
     const message = textDecoder.decode(payload);
 
-    // Call message callback if set
-    // this.responses.next(message);
-    console.log(message);
     subscribers.forEach((sub) => sub.next(message));
   };
 

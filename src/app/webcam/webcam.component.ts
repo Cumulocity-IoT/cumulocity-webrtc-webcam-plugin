@@ -14,7 +14,9 @@ import {
   Observable,
   of,
   share,
+  startWith,
   switchMap,
+  takeUntil,
   tap,
 } from 'rxjs';
 import { signalingConnection } from './signaling.service';
@@ -31,8 +33,6 @@ enum WebRTCSignalingMessageTypes {
   providers: [],
 })
 export class WebcamComponent {
-  // Global State
-  connectionUUID: string | undefined;
   mediaStream$: Observable<MediaStream> | undefined;
 
   constructor(
@@ -96,18 +96,9 @@ export class WebcamComponent {
           })
         );
 
-        const connectionState$ = fromEvent<Event>(
-          peerConnection,
-          'connectionstatechange'
-        ).pipe(
-          tap((event) => {
-            console.log(event);
-          })
-        );
-
         return merge(
           of({ mediaStream, peerConnection }),
-          merge(track$, connectionState$).pipe(switchMap(() => NEVER))
+          merge(track$).pipe(switchMap(() => NEVER))
         );
       })
     );
@@ -121,10 +112,32 @@ export class WebcamComponent {
           xsrf,
           host: '127.0.0.1',
           port: '1984',
-          webcam: 'tedge_cam'
+          webcam: 'tedge_cam',
         });
 
+        const connectionState$ = fromEvent<Event>(
+          peerConnection,
+          'connectionstatechange'
+        ).pipe(
+          startWith(null),
+          map(() => {
+            return peerConnection.connectionState;
+          })
+        );
+
+        const canCloseSignalingConnection$ = connectionState$.pipe(
+          filter((state) => {
+            return (
+              state === 'connected' ||
+              state === 'failed' ||
+              state === 'closed' ||
+              state === 'disconnected'
+            );
+          })
+        );
+
         const signalingMessages$ = signaling.pipe(
+          takeUntil(canCloseSignalingConnection$),
           tap((msg) => {
             try {
               const parsed = JSON.parse(msg);
