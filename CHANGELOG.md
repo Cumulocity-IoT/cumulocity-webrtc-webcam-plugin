@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/compare/v3.0.0...v3.0.1) (2025-11-12)
+
+
+### Bug Fixes
+
+* add support for basic auth ([0506390](https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/commit/0506390c03b0f7ee3fa27d6ee502682e78c389e4))
+
 # [3.0.0](https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/compare/v2.0.1...v3.0.0) (2025-01-18)
 
 
