@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { BasicAuth } from '@c8y/client';
+import { FetchClient } from '@c8y/client';
 import { IceServerConfigurationService } from '../ice-server-configuration.service';
 import {
   combineLatest,
@@ -38,7 +38,7 @@ export class WebcamComponent {
   constructor(
     private activatedRoute: ActivatedRoute,
     private iceConfig: IceServerConfigurationService,
-    private basicAuth: BasicAuth
+    private fetch: FetchClient
   ) {}
 
   play() {
@@ -227,9 +227,12 @@ export class WebcamComponent {
   }
 
   private getToken(): { token: string; xsrf: string } {
-    const { headers } = this.basicAuth.getFetchOptions({});
-    const { Authorization: token, 'X-XSRF-TOKEN': xsrf } = headers;
-    if (token && token !== 'Basic ') {
+    const { headers } = this.fetch.getFetchOptions();
+    let { Authorization: token, 'X-XSRF-TOKEN': xsrf } = headers;
+    if (token) {
+      token = token.replace('Basic ', '');
+    }
+    if (token) {
       return { token, xsrf };
     }
 
