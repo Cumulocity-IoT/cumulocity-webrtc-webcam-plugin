@@ -7,14 +7,7 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "style": "less",
-          "standalone": false
-        },
-        "@schematics/angular:directive": {
-          "standalone": false
-        },
-        "@schematics/angular:pipe": {
-          "standalone": false
+          "style": "less"
         }
       },
       "root": "",
@@ -24,7 +17,6 @@
         "build": {
           "builder": "@c8y/devkit:build",
           "options": {
-            "outputPath": "dist/sag-ps-iot-pkg-webrtc-webcam-plugin",
             "polyfills": [
               "zone.js"
             ],
@@ -37,13 +29,12 @@
               }
             ],
             "styles": [
-              "@c8y/style/main.less",
-              "src/styles.less"
+              "@c8y/style/main.less"
             ],
-            "scripts": [],
             "aot": false,
             "main": "src/main.ts",
             "buildOptimizer": false,
+            "outputPath": "dist/sag-ps-iot-pkg-webrtc-webcam-plugin",
             "allowedCommonJsDependencies": [
               "regenerator-runtime/runtime",
               "@cordobo/qrcode",
@@ -61,8 +52,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kB",
-                  "maximumError": "4kB"
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
                 }
               ],
               "outputHashing": "all",
@@ -92,7 +83,7 @@
           "builder": "@c8y/devkit:extract-i18n"
         },
         "test": {
-          "builder": "@angular-devkit/build-angular:karma",
+          "builder": "@angular/build:karma",
           "options": {
             "polyfills": [
               "zone.js",
@@ -106,11 +97,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "@c8y/style/main.less",
-              "src/styles.less"
-            ],
-            "scripts": []
+            "styles": []
           }
         },
         "deploy": {
