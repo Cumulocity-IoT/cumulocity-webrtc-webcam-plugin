@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/compare/v3.0.1...v3.1.0) (2026-02-06)
+
+
+### Features
+
+* upgrade to websdk version 1023 ([#4](https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/issues/4)) ([5a32777](https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/commit/5a32777776cfab4a7d91917c326666c6df0de609))
+
 ## [3.0.1](https://github.com/Cumulocity-IoT/cumulocity-webrtc-webcam-plugin/compare/v3.0.0...v3.0.1) (2025-11-12)
 
 

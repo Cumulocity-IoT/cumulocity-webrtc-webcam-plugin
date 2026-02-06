@@ -1,6 +1,6 @@
 {
   "name": "webrtc-webcam-plugin",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "scripts": {
     "start:shell": "ng serve --shell devicemanagement",
     "commit": "commit",
