@@ -5,6 +5,7 @@ import { IceServerConfigurationService } from '../ice-server-configuration.servi
 @Component({
   selector: 'app-ice-server-configuration',
   templateUrl: './ice-server-configuration.component.html',
+  standalone: false
 })
 export class IceServerConfigurationComponent implements OnInit {
   config = '';

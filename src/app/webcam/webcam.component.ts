@@ -31,6 +31,7 @@ enum WebRTCSignalingMessageTypes {
   selector: 'app-webrtc-webcam',
   templateUrl: './webcam.component.html',
   providers: [],
+  standalone: false
 })
 export class WebcamComponent {
   mediaStream$: Observable<MediaStream> | undefined;
