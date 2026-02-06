@@ -34,6 +34,7 @@ export default {
     }
   },
   buildTime: {
+    skipMonacoLanguageSupport: true,
     federation: [
       '@angular/animations',
       '@angular/cdk',
